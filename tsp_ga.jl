@@ -104,10 +104,10 @@ function rulette_selection(generation::Generation, desired_quantity::Int=200)
     end
 end
 
-function new_generation_evo(distances, population, selected, mutation_probability)
+function new_generation_evo(distances, population, selected, mutation_probability, crossover_probability)
     # display(population[1])
     # Make crossover based on selected data and generate 5*population quantity of children
-    offspring = crossover(length(population[1].individuals), selected)
+    offspring = crossover(length(population[1].individuals), selected, crossover_probability)
     # Mutate all of children
     offspring = mutation(offspring, mutation_probability)
     # Mutate parents
@@ -118,7 +118,7 @@ function new_generation_evo(distances, population, selected, mutation_probabilit
     return sort_generation(Generation(Vector{Indiv}(vcat(offspring, selected))))
 end
 
-function crossover(len_gen, selected)
+function crossover(len_gen, selected, crossover_probability)
     len_s = length(selected)
     offspring = []
 
@@ -133,14 +133,71 @@ function crossover(len_gen, selected)
         else
             parent2 = rand(leftover)
         end
-        # Creating Child
-        child_1 = cross_two(selected[parent1], selected[parent2])
-        append!(offspring, child_1)
-        child_2 = cross_two(selected[parent2], selected[parent1])
-        append!(offspring, child_2)
+        
+        if rand(Uniform(0,1)) < crossover_probability    
+            # Creating Child
+            child_1 = cross_two_cycle(selected[parent1], selected[parent2])
+            append!(offspring, child_1)
+        end
+        if rand(Uniform(0,1)) < crossover_probability
+            child_2 = cross_two_cycle(selected[parent2], selected[parent1])
+            append!(offspring, child_2)
+        end
     end
+    
     # Return the offspring
     return offspring
+end
+
+function cross_two_cycle(parent_first, parent_second)
+    chromosome_parent_1 = parent_first.chromosome
+    chromosome_parent_2 = parent_second.chromosome
+
+    chromosome_child = zeros(Int64, length(chromosome_parent_1))
+    chromosome_child[1] = chromosome_parent_1[1]
+
+    val = chromosome_parent_2[1]
+    pos = findfirst(x -> x==val, chromosome_parent_1)
+    if chromosome_child[pos] != 0
+        empty_positions = [x[1] for x in enumerate(chromosome_child) if x[2]==false]
+        if isempty(empty_positions)
+            return Indiv(chromosome_child, NaN)
+        end
+        leftover_cities = [y for y in chromosome_parent_1 if y ∉ chromosome_child]
+        chromosome_child[empty_positions] .= leftover_cities
+    else
+        chromosome_child[pos] = val
+    end
+
+    for i in 2:length(chromosome_parent_1)
+        val = chromosome_parent_1[pos]
+        pos = findfirst(x -> x==val, chromosome_parent_2)
+        if chromosome_child[pos] != 0
+            empty_positions = [x[1] for x in enumerate(chromosome_child) if x[2]==false]
+            if isempty(empty_positions)
+                return Indiv(chromosome_child, NaN)
+            end
+            leftover_cities = [y for y in chromosome_parent_2 if y ∉ chromosome_child]
+            chromosome_child[empty_positions] .= leftover_cities
+        else
+            chromosome_child[pos] = val
+        end
+
+        val = chromosome_parent_2[pos]
+        pos = findfirst(x -> x==val, chromosome_parent_1)
+        if chromosome_child[pos] != 0
+            empty_positions = [x[1] for x in enumerate(chromosome_child) if x[2]==false]
+            if isempty(empty_positions)
+                return Indiv(chromosome_child, NaN)
+            end
+            leftover_cities = [y for y in chromosome_parent_1 if y ∉ chromosome_child]
+            chromosome_child[empty_positions] .= leftover_cities
+        else
+            chromosome_child[pos] = val
+        end
+    end
+
+    return Indiv(chromosome_child, NaN)
 end
 
 function cross_two(parent_first, parent_second)
@@ -231,9 +288,10 @@ end
 
 function EvolutionAlgorithm(
     data,
-    population_quantity::Int=100,
+    population_quantity::Int=500,
     epsilon=0.00001,
-    mutation_probability=0.2
+    mutation_probability=0.2,
+    crossover_probavility=0.8
     )
 
     N = length(data[1])
@@ -256,7 +314,7 @@ function EvolutionAlgorithm(
     while generation < population_quantity
 
         selected = rulette_selection(population[generation], population_quantity)
-        next_generation = new_generation_evo(distances, population[generation], selected, mutation_probability)
+        next_generation = new_generation_evo(distances, population[generation], selected, mutation_probability, crossover_probavility)
         generation += 1
         append!(population, next_generation)
         new_best = population[generation].individuals[1].fit
@@ -278,6 +336,12 @@ function EvolutionAlgorithm(
         )
         
     end
+
+    best = []
+    for generation in population
+        append!(best, minimum(x->x.fit, generation.individuals))
+    end
+    display(minimum(best))
 
 
     return [select_parents(population, generation), generation]
@@ -330,6 +394,6 @@ end
 x = [0, 3, 6, 7, 15, 12, 14, 9, 7, 0]
 y = [1, 4 ,5, 3, 0, 4, 10, 6, 9, 10]
 data = [x,y]
-@benchmark EvolutionAlgorithm(data)
-# display(best[1][1])
-# visualize_graph(data, best[1][1])
+best = EvolutionAlgorithm(data)
+display(best[1][1])
+visualize_graph(data, best[1][1])
