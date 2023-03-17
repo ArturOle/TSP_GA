@@ -200,6 +200,22 @@ function cross_two_cycle(parent_first, parent_second)
     return Indiv(chromosome_child, NaN)
 end
 
+function cycle_step(child, list_1, list_2, pos)
+    val = list_2[pos]
+    pos = findfirst(x -> x==val, list_1)
+
+    if child[pos] != 0
+        empty_positions = [x[1] for x in enumerate(child) if x[2]==false]
+        if isempty(empty_positions)
+            return 1
+        end
+        leftover_cities = [y for y in list_1 if y ∉ child]
+        child[empty_positions] .= leftover_cities
+    else
+        child[pos] = val
+    end
+end
+
 function cross_two(parent_first, parent_second)
     # Creating the child based on the prroperties of the parents
     
@@ -287,11 +303,11 @@ function swap!(a, b)
 end
 
 function EvolutionAlgorithm(
-    data,
+    data;
     population_quantity::Int=500,
     epsilon=0.00001,
     mutation_probability=0.2,
-    crossover_probavility=0.8
+    crossover_probability=0.8
     )
 
     N = length(data[1])
@@ -314,7 +330,7 @@ function EvolutionAlgorithm(
     while generation < population_quantity
 
         selected = rulette_selection(population[generation], population_quantity)
-        next_generation = new_generation_evo(distances, population[generation], selected, mutation_probability, crossover_probavility)
+        next_generation = new_generation_evo(distances, population[generation], selected, mutation_probability, crossover_probability)
         generation += 1
         append!(population, next_generation)
         new_best = population[generation].individuals[1].fit
@@ -337,11 +353,11 @@ function EvolutionAlgorithm(
         
     end
 
-    best = []
-    for generation in population
-        append!(best, minimum(x->x.fit, generation.individuals))
-    end
-    display(minimum(best))
+    # best = []
+    # for generation in population
+    #     append!(best, minimum(x->x.fit, generation.individuals))
+    # end
+    #display(minimum(best))
 
 
     return [select_parents(population, generation), generation]
@@ -389,11 +405,17 @@ function visualize_graph(data, best)
 end
 
 
-# x = [3 2 12 7  9  3 16 11 9 2]
-# y = [1 4 2 4.5 9 1.5 11 8 10 7]
-x = [0, 3, 6, 7, 15, 12, 14, 9, 7, 0]
-y = [1, 4 ,5, 3, 0, 4, 10, 6, 9, 10]
-data = [x,y]
-best = EvolutionAlgorithm(data)
-display(best[1][1])
-visualize_graph(data, best[1][1])
+# x = [3 2 12 7  9  3 16 11 9 2];
+# y = [1 4 2 4.5 9 1.5 11 8 10 7];
+
+
+# data = [x,y]
+# best = EvolutionAlgorithm(
+#     data,
+#     population_quantity=100,
+#     epsilon=10^(-5),
+#     mutation_probability=0.2,
+#     crossover_probability=0.8
+# )
+# display(best[1][1])
+# visualize_graph(data, best[1][1])
