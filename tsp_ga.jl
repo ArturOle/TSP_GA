@@ -353,12 +353,6 @@ function EvolutionAlgorithm(
         
     end
 
-    # best = []
-    # for generation in population
-    #     append!(best, minimum(x->x.fit, generation.individuals))
-    # end
-    #display(minimum(best))
-
 
     return [select_parents(population, generation), generation]
 end
@@ -401,21 +395,21 @@ function visualize_graph(data, best)
         lw=3,
         color="#73C6B6"
     ) 
-	scatter!(points_coords_x, points_coords_y, color="#73C6B6", series_annotations=text.(1:length(data[1]), :bottom))
+	scatter!(points_coords_x, points_coords_y, color="#73C6B6", series_annotations=text.(1:length(points_coords_x), :bottom))
 end
 
 
-# x = [3 2 12 7  9  3 16 11 9 2];
-# y = [1 4 2 4.5 9 1.5 11 8 10 7];
+x = [3, 2, 12, 7, 9, 3, 16, 11, 9, 2];
+y = [1, 4, 2, 4.5, 9, 1.5, 11, 8, 10, 7];
 
 
-# data = [x,y]
-# best = EvolutionAlgorithm(
-#     data,
-#     population_quantity=100,
-#     epsilon=10^(-5),
-#     mutation_probability=0.2,
-#     crossover_probability=0.8
-# )
-# display(best[1][1])
-# visualize_graph(data, best[1][1])
+data = [x,y]
+best = EvolutionAlgorithm(
+    data,
+    population_quantity=500,
+    epsilon=10^(-6),
+    mutation_probability=0.2,
+    crossover_probability=0.8
+)
+display(best[1][1])
+visualize_graph(data, best[1][1])
